@@ -1,0 +1,13 @@
+[package]
+name = "vc-notifier"
+version = "0.1.0"
+authors = ["kash / Hytus <kash@hytus.net>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serenity = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+log = "0.4.14"
+env_logger = "0.9.0"
