@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serenity::{model::id::{ChannelId, GuildId}, prelude::{RwLock, TypeMapKey}};
+use serenity::{
+    model::id::{ChannelId, GuildId},
+    prelude::{RwLock, TypeMapKey},
+};
 
 #[derive(Debug, Clone)]
 pub struct _Settings {
