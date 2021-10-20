@@ -1,15 +1,27 @@
 use log::{error, info, warn};
-use serenity::{async_trait, client::{Client, Context, EventHandler}, framework::standard::{StandardFramework, macros::{group, hook}}, http::CacheHttp, model::{
-        prelude::*,
-        id::{GuildId},
-    }, prelude::*};
-
-use std::{collections::HashMap, env, process, sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
-
-use vc_notifier::{
-    commands::setting::*,
-    config::*
+use serenity::{
+    async_trait,
+    client::{Client, Context, EventHandler},
+    framework::standard::{
+        macros::{group, hook},
+        StandardFramework,
+    },
+    http::CacheHttp,
+    model::{id::GuildId, prelude::*},
+    prelude::*,
 };
+
+use std::{
+    collections::HashMap,
+    env, process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
+
+use vc_notifier::{commands::setting::*, config::*};
 
 #[group]
 #[commands(settings)]
@@ -28,7 +40,9 @@ async fn before_hook(_: &Context, msg: &Message, _: &str) -> bool {
 async fn unrecognized_command_hook(ctx: &Context, msg: &Message, cmd_name: &str) {
     warn!("{} is called!", cmd_name);
     if let Some(_) = msg.guild_id {
-        msg.reply(ctx.http(), format!("{} is not existed!", cmd_name)).await.expect("failed reply");
+        msg.reply(ctx.http(), format!("{} is not existed!", cmd_name))
+            .await
+            .expect("failed reply");
     }
 }
 
@@ -61,10 +75,17 @@ impl EventHandler for Handler {
                 match chan.kind {
                     ChannelType::Voice => {
                         // **Note** this logic will be replaced when channel is private
-                        let current_members = chan.members(ctx.cache.clone()).await.unwrap_or_else(|err| {warn!("{:#?}", err); vec![]}).len() as u64;
+                        let current_members = chan
+                            .members(ctx.cache.clone())
+                            .await
+                            .unwrap_or_else(|err| {
+                                warn!("{:#?}", err);
+                                vec![]
+                            })
+                            .len() as u64;
                         vc_members += current_members;
                     }
-                    _ => continue
+                    _ => continue,
                 }
             }
             {
@@ -75,7 +96,13 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn voice_state_update(&self, ctx: Context, guild_id: Option<GuildId>, old: Option<VoiceState>, _new: VoiceState) {
+    async fn voice_state_update(
+        &self,
+        ctx: Context,
+        guild_id: Option<GuildId>,
+        old: Option<VoiceState>,
+        _new: VoiceState,
+    ) {
         let gid = guild_id.unwrap_or_else(|| {
             warn!("cannot read guild_id, so set to `GuildId(0)`");
             GuildId(0)
@@ -90,18 +117,18 @@ impl EventHandler for Handler {
         let settings = if let Some(s) = settings {
             s.clone()
         } else {
-            return
+            return;
         };
 
         if !settings.enable {
-            return
+            return;
         }
 
         let send_channel = if let Some(chan) = settings.hooked_channel {
             chan
         } else {
             warn!("hooked_channel is `None`. Skipped process.");
-            return
+            return;
         };
 
         let ctx = Arc::new(ctx);
@@ -110,10 +137,13 @@ impl EventHandler for Handler {
             // somebody left voice channel
             if _read_vc_members(&ctx, &gid).await == 1 {
                 if !self.is_locking.load(Ordering::Relaxed) {
-                    send_channel.send_message(&ctx.http, |m| {
-                        m.content(settings.leave_message.as_str());
-                        m
-                    }).await.expect("");
+                    send_channel
+                        .send_message(&ctx.http, |m| {
+                            m.content(settings.leave_message.as_str());
+                            m
+                        })
+                        .await
+                        .expect("");
                 }
             }
             _decrement_vc_members(&ctx, &gid).await;
@@ -130,10 +160,13 @@ impl EventHandler for Handler {
                     tokio::spawn(async move {
                         tokio::time::sleep(Duration::from_secs(settings.duration)).await;
                         if _read_vc_members(&ctx_clone, &gid).await != 0 {
-                            send_channel.send_message(&ctx_clone.http, |m| {
-                                m.content(settings.join_message.as_str());
-                                m
-                            }).await.expect("");
+                            send_channel
+                                .send_message(&ctx_clone.http, |m| {
+                                    m.content(settings.join_message.as_str());
+                                    m
+                                })
+                                .await
+                                .expect("");
                         }
                         locking_clone.swap(false, Ordering::Relaxed);
                     });
@@ -191,7 +224,9 @@ async fn main() {
     // Login with a bot token from the environment
     let token = env::var("DISCORD_TOKEN").expect("Need `DISCORD_TOKEN` in env`");
     let mut client = Client::builder(token)
-        .event_handler(Handler{is_locking: Arc::new(AtomicBool::new(false))})
+        .event_handler(Handler {
+            is_locking: Arc::new(AtomicBool::new(false)),
+        })
         .framework(framework)
         .await
         .expect("Error creating client");
