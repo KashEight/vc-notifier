@@ -1,7 +1,12 @@
 FROM rust:1.55.0 AS builder
 
+RUN cargo new --bin app
 WORKDIR /app
-COPY . /app
+COPY Cargo.toml Cargo.lock ./
+RUN cargo build --release
+
+COPY src/ /app/src/
+
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc

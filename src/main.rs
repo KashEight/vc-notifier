@@ -3,8 +3,8 @@ use serenity::{
     async_trait,
     client::{Client, Context, EventHandler},
     framework::standard::{
-        macros::{group, hook},
-        StandardFramework,
+        macros::{group, hook, help},
+        StandardFramework, Args, HelpOptions, CommandGroup, CommandResult, help_commands::plain,
     },
     http::CacheHttp,
     model::{id::GuildId, prelude::*},
@@ -12,7 +12,7 @@ use serenity::{
 };
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env, process,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -48,6 +48,19 @@ async fn unrecognized_command_hook(ctx: &Context, msg: &Message, cmd_name: &str)
 
 struct Handler {
     is_locking: Arc<AtomicBool>,
+}
+
+#[help]
+async fn vcn_help(
+    context: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>
+) -> CommandResult {
+    let _ = plain(context, msg, args, &help_options, groups, owners).await;
+    Ok(())
 }
 
 #[async_trait]
@@ -219,7 +232,8 @@ async fn main() {
         .configure(|c| c.prefix("vn=="))
         .before(before_hook)
         .unrecognised_command(unrecognized_command_hook)
-        .group(&VCNOTIFIER_GROUP);
+        .group(&VCNOTIFIER_GROUP)
+        .help(&VCN_HELP);
 
     // Login with a bot token from the environment
     let token = env::var("DISCORD_TOKEN").expect("Need `DISCORD_TOKEN` in env`");
